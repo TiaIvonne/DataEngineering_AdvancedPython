@@ -19,29 +19,9 @@ class Cache:
     """
     Implementacion de la clase Cache
     Attributes:
-        app_name : str private
-            nombre del directorio donde se desea guardar archivos en cache
-        obsolescence : int private
-            numero de dias que un archivo en cache sigue siendo valido
-        cache_dir: str private
-            ruta completa del subdirectorio que se crea en .my_cache
-
-    Methods:
-        __get_file_path(name:str)-> Path
-            Obtiene la ruta del archivo
-        set(name:str, data:str)-> None
-            almacena datos en cache, escribe un archivo
-        exists(name:str)-> bool
-            comprueba si el archivo existe en cache
-        load(name:str)-> str
-            recupera los datos almacenados en cache
-        how_old(name:str)-> float
-            calcula la edad en milisegundos de un archivo
-        delete(name:str) -> None
-            elimina un archivo seleccionado en cache
-        clear()-> None
-            limpia todo el directorio seleccionado
-
+        __app_name (str): Nombre del directorio donde se desea guardar archivos en cache
+        __obsolescence (int): Numero de dias que un archivo en cache sigue siendo valido
+        __cache_dir (str): Ruta completa del subdirectorio que se crea en .my_cache
 
     """
     def __init__(self, app_name:str, obsolescence:int, cache_dir:str=None)->None:
@@ -79,8 +59,9 @@ class Cache:
     def set(self, name:str, data:str)->None:
         """
         Metodo para almacenar datos en cache
-        name: nombre del archivo
-        data: contenido del mismo
+        Args:
+            name (str): nombre del archivo
+            data (str): contenido del mismo
         """
         # Creates directories if they don't exist
         cache_path = Path(self.__cache_dir) 
