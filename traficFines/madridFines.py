@@ -3,34 +3,45 @@
 # Implementacion de MadridFines
 
 from typing import Optional
-import requests
 from bs4 import BeautifulSoup
+from .cacheURL import CacheURL # import relativo busca en el paquete
+import requests
 import pandas as pd
-from cacheURL import CacheURL
 from io import StringIO
+import datetime
+import matplotlib as plt
 
 # Constantes fuera de la clase
 RAIZ = "https://datos.madrid.es/"
 MADRID_FINES_URL = "sites/v/index.jsp?vgnextoid=fb9a498a6bdb9410VgnVCM1000000b205a0aRCRD&vgnextchannel=374512b9ace9f310VgnVCM100000171f5a0aRCRD"
 
 class MadridError(Exception):
-    """ Implementación de errores para la clase MadridFines """
+    """
+    Implementación de errores para la clase MadridFines
+    Example:
+        >>> raise MadridError("Error al obtener la url")
+    """
     pass
 
 # Función fuera de la clase MadridFines
 def get_url(year:int, month:int) -> str:
     """
     Obtiene un link de descarga de la página del ayuntamiento según año y mes especificado
+
     Args:
-        year: año buscado
-        month: mes buscado
-    Return:
-        Una url con el link de descarga correspondiente al archivo csv de ese año y mes especificado
+        year (int): año buscado
+        month (int): mes buscado
+    Returns:
+        str: Una url con el link de descarga correspondiente al archivo csv de ese año y mes especificado
     Raises:
-        MadridError
-        Si hay errores al obtener la url (código diferente a 200)
-        Si hay fechas que no existen en el link url
+        MadridError: Si hay errores al obtener la url (código diferente a 200)
+        MadridError: Si hay fechas que no existen en el link url
     """
+    # Valida anio
+    # Esto esta harcodeado 2016 buscar alternativa
+    if not (2016 <= year <= datetime.date.today().year):
+        raise MadridError(f"Anio fuera de rango: {year}")
+
     # Valida que los meses esten entre 1 y 12
     if not 1 <= month <= 12:
         raise MadridError(f"Mes invalido: {month}, debe estar entre 1 y 12")
@@ -66,23 +77,21 @@ def get_url(year:int, month:int) -> str:
 class MadridFines:
     """
     Implementacion de la clase MadridFines
-    Methods:
-        __init__: constructor de la clase
-        __load: Usa cacheurl para acceder a los datos de la aplicacion y crear un df, estatico y privado
-        __clean: limpia el dataframe creado en __load, estatico y privado
-        add: agrega datos de mes y anio al dataframe actual
 
+    Descarga, almacena en cache y procesa los datos de multas de Madrid, utilizando sistema de cache de gestion de datos.
+
+    Attributes:
+        __cacheurl(CacheURL): gestor de la cache, privado
+        __data (pd.DataFrame): DataFrame vacio para inicializar datos
+        __loaded (list): Lista que guarda tuplas con el formato mes y anio
     """
     def __init__(self, app_name:str, obsolescence:int):
         """
         Constructor de la clase MadridFines
+
         Args:
-            app_name: nombre del directorio del cache de la aplicacion
-            obsolescence: dias que los datos de la cache son validos
-        Attributes:
-            __cacheurl(CacheURL): gestor de la cache, privado
-            __data(pd.DataFrame): DataFrame vacio para inicializar datos, privado
-            __loaded: Lista vacia que guarda tuplas con el formato mes y anio, privado
+            app_name (str): nombre del directorio del cache de la aplicacion
+            obsolescence (int): dias que los datos de la cache son validos
         """
         self.__cacheurl = CacheURL(app_name, obsolescence)
         self.__data = pd.DataFrame() # inicializa vacio
@@ -90,19 +99,19 @@ class MadridFines:
 
 
     @staticmethod
-    def __load(year:int, month:int, cacheurl)->pd.DataFrame:
+    def __load(year:int, month:int, cacheurl:CacheURL)->pd.DataFrame:
         """
         Metodo interno y estatico que usa cacheurl para acceder a los datos del anio y mes
-        creando un dataframe de pandas
+        creando un dataframe de pandas.
+
         Args:
-            year: anio buscado
-            month: mes buscado
-            cacheurl: URL de la cache
+            year (int): anio buscado
+            month (int): mes buscado
+            cacheurl (CacheURL): URL de la cache
         Returns:
-            un dataframe de pandas con la informacion de las multas del anio y mes indicado
+            pd.Dataframe: un dataframe de pandas con la informacion de las multas del anio y mes indicado
         Raises:
-            MadridError
-            Si hay problemas al parsear en csv en el apartadi try/except
+            MadridError: Si hay problemas al parsear en csv en el apartado try/except
         """
         # Invoca a get_url para obtener la url del archivo correspondiente al anio y mes
         url = get_url(year, month)
@@ -123,13 +132,10 @@ class MadridFines:
     def __clean(df:pd.DataFrame)-> None:
         """
         Metodo que limpia el dataframe de pandas creado en load (elimina espacios, convierte a numero,
-        cambia formato de nombres de columnas
-        Args:
-            df: dataframe de pandas
-        Returns:
-            None
-        Raises:
+        cambia formato de nombres de columnas.
 
+        Args:
+            df (pd.DataFrame): dataframe de pandas
         """
         # Constantes de configuracion si se necesitan mas se agregan aqui
         text_columns = ['CALIFICACION','DESCUENTO', 'HECHO_BOL', 'DENUNCIANTE', 'LUGAR']
@@ -171,6 +177,112 @@ class MadridFines:
 
 
     def add(self, year: int, month: Optional[int] = None) -> None:
-        pass
+        """
+        Agrega multas de un mes o anio especificado al dataset
 
+        Args:
+            year (int): anio buscado
+            month (int): mes buscado, opcional. Si no se especifica mes, carga el anio completo
+        Raises:
+            MadridError: en caso de ingresar un mes que no existe en el rango 1 a 12
+            MadridError: en caso de ingresar un anio fuera de rango (2016, anio actual)
+        """
+        # Valida el mes
+        if month is not None and not (1 <= month <= 12):
+            raise MadridError(f'Mes invalido: {month}')
+
+        if not (2016 <= year <= datetime.date.today().year):
+            raise MadridError(f'Anio fuera de rango: {year}')
+
+        if month is None:
+            months = list(range(1, 13))
+        else:
+            months = [month]
+
+        for m in months:
+            if(m, year) not in self.__loaded:
+                df_new = self.__load(year, m, self.__cacheurl)
+                self.__clean(df_new)
+                self.__data = pd.concat([self.__data, df_new], ignore_index=False)
+                self.__loaded.append((m, year))
+
+    def fines_hour(self, fig_name: str) -> None:
+        """
+        Metodo que genera un grafico a partir de los datos previamente guardados con las multas por hora y fecha
+
+        Args:
+            fig_name (str): Nombre del grafico
+        Raises:
+             MadridError en caso de no existir datos cargados
+        """
+        if self.__data.empty:
+            raise MadridError(f'Datos no encontrados')
+
+        # Crea un dataset temporal extrayendo hora y mes del indice
+        temp_multas = self.__data.copy()
+        temp_multas['horas'] = temp_multas.index.hour
+        temp_multas['mes'] = temp_multas.index.month
+
+        # Agrupa los resultados por hora y mes
+        multas_horas = temp_multas.groupby(['horas', 'mes']).size().reset_index(name='Multas')
+
+        # Crear tabla pivote, los meses pasan a ser columnas y se reagrupa para hacer mas facil el grafico
+        data_pivot = multas_horas.pivot(index='horas', columns='mes', values='Multas')
+
+        # Crea el grafico
+        plt.figure(figsize=(10, 6))
+        data_pivot.plot(marker = 'o', linewidth = 10)
+        plt.title('Evolucion de multas por hora')
+        plt.xlabel('Horas')
+        plt.ylabel('Numero de multas')
+        plt.savefig(fig_name)
+        plt.show()
+        plt.close()
+
+    def fines_calification(self) -> pd.DataFrame:
+        """
+        Analiza la distribucion de multas por calificacion, mes u anio
+
+        Returns:
+            pd.Dataframe: Un dataframe con la distribucion de multas por calificacion
+        Raises:
+            MadridError en caso de no existir datos cargados
+        """
+        if self.__data.empty:
+            raise MadridError(f'Datos no encontrados')
+
+        temp_calif = self.__data.copy()
+        res = temp_calif.groupby(['MES', 'ANIO', 'CALIFICACION']).size().reset_index(name='count')
+
+        # Crea la tabla pivot
+        res_pivot = res.pivot_table(
+            index=['MES', 'ANIO'],
+            columns='CALIFICACION',
+            values='count',
+            fill_value=0
+        )
+
+        return res_pivot
+
+    def total_payment(self) -> pd.DataFrame:
+        """
+        Genera un resumen del importe total tanto valor normal como minmo para un mes y anio
+
+        Returns:
+            pd.Dataframe: Un dataframe con la recaudacion normal y minima de las multas
+        Raises:
+            MadridError en caso de no existir datos cargados
+        """
+        if self.__data.empty:
+            raise MadridError(f'Datos no encontrados')
+
+        total_payment = self.__data.copy()
+        # La recaudacion minima tb se puede calcular por fuera y agregarlo despues al dataset pero queria probar mas con lambda
+        total = total_payment.groupby(['MES', 'ANIO']).agg(
+            rec_maxima=('IMP_BOL', 'sum'),
+            rec_minima=('IMP_BOL', lambda x: x.sum() * 0.5)
+
+        ).reset_index()
+
+        return total
 
