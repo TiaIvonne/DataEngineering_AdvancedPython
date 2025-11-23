@@ -9,7 +9,7 @@ import requests
 import pandas as pd
 from io import StringIO
 import datetime
-import matplotlib as plt
+import matplotlib.pyplot as plt
 
 # Constantes fuera de la clase
 RAIZ = "https://datos.madrid.es/"
@@ -81,7 +81,7 @@ class MadridFines:
     Descarga, almacena en cache y procesa los datos de multas de Madrid, utilizando sistema de cache de gestion de datos.
 
     Attributes:
-        __cacheurl(CacheURL): gestor de la cache, privado
+        __cacheurl(CacheURL): gestor de la cache.
         __data (pd.DataFrame): DataFrame vacio para inicializar datos
         __loaded (list): Lista que guarda tuplas con el formato mes y anio
     """
@@ -218,23 +218,27 @@ class MadridFines:
         if self.__data.empty:
             raise MadridError(f'Datos no encontrados')
 
-        # Crea un dataset temporal extrayendo hora y mes del indice
+        # Crea un dataset temporal extrayendo hora, mes y año del indice
         temp_multas = self.__data.copy()
         temp_multas['horas'] = temp_multas.index.hour
         temp_multas['mes'] = temp_multas.index.month
+        temp_multas['anio'] = temp_multas.index.year
+        temp_multas['anio_mes'] = temp_multas['anio'].astype(str) + '-' + temp_multas['mes'].astype(str).str.zfill(2)
 
-        # Agrupa los resultados por hora y mes
-        multas_horas = temp_multas.groupby(['horas', 'mes']).size().reset_index(name='Multas')
+        # Agrupa los resultados por hora, año y mes
+        multas_horas = temp_multas.groupby(['horas', 'anio_mes']).size().reset_index(name='Multas')
 
-        # Crear tabla pivote, los meses pasan a ser columnas y se reagrupa para hacer mas facil el grafico
-        data_pivot = multas_horas.pivot(index='horas', columns='mes', values='Multas')
+        # Crear tabla pivote, los años-meses pasan a ser columnas y se reagrupa para hacer mas facil el grafico
+        data_pivot = multas_horas.pivot(index='horas', columns='anio_mes', values='Multas')
 
         # Crea el grafico
         plt.figure(figsize=(10, 6))
-        data_pivot.plot(marker = 'o', linewidth = 10)
+        data_pivot.plot(marker = 'o', linewidth = 2)
         plt.title('Evolucion de multas por hora')
         plt.xlabel('Horas')
         plt.ylabel('Numero de multas')
+        plt.legend(title='Año-Mes', bbox_to_anchor=(1.05, 1), loc='upper left')
+        plt.tight_layout()
         plt.savefig(fig_name)
         plt.show()
         plt.close()
