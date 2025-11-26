@@ -1,7 +1,9 @@
 from tests.conftest import temp_cache_dir
 from traficFines.cache import Cache, CacheError, CACHE_DIR
 from pathlib import Path
+import pytest
 
+# Comando para ejecutar pytest tests/test_cache.py -v
 
 def test_init_basic(cache_instance, temp_cache_dir):
     """
@@ -38,7 +40,7 @@ Se debe testear en un metodo publico que lo use
 '''
 def test_creates_file_correct(cache_instance, temp_cache_dir):
     """
-    Test 3Verifica que set() crea el archivo en la ruta correcta
+    Test 3: Verifica que set() crea el archivo en la ruta correcta
     """
 
     # Preparar el ambiente de prueba
@@ -75,5 +77,46 @@ def test_property_obsolescence(cache_instance):
     """
     assert cache_instance.obsolescence == 7
     assert isinstance(cache_instance.obsolescence, int)
+
+def test_set_creates_file(cache_instance):
+    """
+    Test 7: Verifica creacion del archivo en la ruta correcta
+    """
+    cache_instance.set('test.txt', 'Test content')
+    assert cache_instance.exists('test.txt')
+    assert cache_instance.load('test.txt') == 'Test content'
+
+def test_exists_returns_false(cache_instance):
+    """
+    Test 8: Verifica que devuelva False en caso que el archivo no existe
+    """
+    assert not cache_instance.exists('inexistent_file.txt')
+
+def test_load_existing_file(cache_instance):
+    """
+    Test 9: Verifica que el metodo load() carga el archivo
+    """
+    cache_instance.set('test.txt', 'Test content')
+    assert cache_instance.load('test.txt') == 'Test content'
+
+def test_load_non_existing_file(cache_instance):
+    """
+    Test 10: Verifica que se lanza una excepcion al invocar el metodo load con un archivo inexistente
+    """
+    # El uso de with lo encontre aqui.
+    # https://stackoverflow.com/questions/23337471/how-do-i-properly-assert-that-an-exception-gets-raised-in-pytest
+    with pytest.raises(CacheError):
+        cache_instance.load('inexistent_file.txt')
+
+def test_delete_file(cache_instance):
+    """
+    Test 11: Verifica que el archivo ha sido eliminado
+    """
+    cache_instance.set('test.txt', 'Test content')
+    cache_instance.delete('test.txt')
+    assert not cache_instance.exists('test.txt')
+
+
+
 
 
