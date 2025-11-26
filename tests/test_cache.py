@@ -39,9 +39,7 @@ __get_file_path es un metodo prvado y no se debe testear directamente.
 Se debe testear en un metodo publico que lo use
 '''
 def test_creates_file_correct(cache_instance, temp_cache_dir):
-    """
-    Test 3: Verifica que set() crea el archivo en la ruta correcta
-    """
+    """ Test 3: Verifica que set() crea el archivo en la ruta correcta """
 
     # Preparar el ambiente de prueba
     file_name = 'test.txt'
@@ -58,60 +56,44 @@ def test_creates_file_correct(cache_instance, temp_cache_dir):
 
 # Se deben testear los atributos de la clase, son privados pero con @property accedemos a ellos
 def test_property_app_name(cache_instance):
-    """
-    Test 4: Verifica que el atributo app_name es el correcto
-    """
+    """ Test 4: Verifica que el atributo app_name es el correcto """
     assert cache_instance.app_name == "TestApp"
     assert isinstance(cache_instance.app_name, str)
 
 def test_property_cache_dir(cache_instance, temp_cache_dir):
-    """
-    Test 5: Verifica que el atributo cache_dir es el correcto
-    """
+    """ Test 5: Verifica que el atributo cache_dir es el correcto """
     assert cache_instance.cache_dir == temp_cache_dir
     assert isinstance(cache_instance.cache_dir, str)
 
 def test_property_obsolescence(cache_instance):
-    """
-    Test 6: Verifica que el atributo obsolescence es el correcto
-    """
+    """ Test 6: Verifica que el atributo obsolescence es el correcto """
     assert cache_instance.obsolescence == 7
     assert isinstance(cache_instance.obsolescence, int)
 
 def test_set_creates_file(cache_instance):
-    """
-    Test 7: Verifica creacion del archivo en la ruta correcta
-    """
+    """ Test 7: Verifica creacion del archivo en la ruta correcta """
     cache_instance.set('test.txt', 'Test content')
     assert cache_instance.exists('test.txt')
     assert cache_instance.load('test.txt') == 'Test content'
 
 def test_exists_returns_false(cache_instance):
-    """
-    Test 8: Verifica que devuelva False en caso que el archivo no existe
-    """
+    """ Test 8: Verifica que devuelva False en caso que el archivo no existe """
     assert not cache_instance.exists('inexistent_file.txt')
 
 def test_load_existing_file(cache_instance):
-    """
-    Test 9: Verifica que el metodo load() carga el archivo
-    """
+    """ Test 9: Verifica que el metodo load() carga el archivo """
     cache_instance.set('test.txt', 'Test content')
     assert cache_instance.load('test.txt') == 'Test content'
 
 def test_load_non_existing_file(cache_instance):
-    """
-    Test 10: Verifica que se lanza una excepcion al invocar el metodo load con un archivo inexistente
-    """
+    """ Test 10: Verifica que se lanza una excepcion al invocar el metodo load con un archivo inexistente """
     # El uso de with lo encontre aqui.
     # https://stackoverflow.com/questions/23337471/how-do-i-properly-assert-that-an-exception-gets-raised-in-pytest
     with pytest.raises(CacheError):
         cache_instance.load('inexistent_file.txt')
 
 def test_delete_file(cache_instance):
-    """
-    Test 11: Verifica que el archivo ha sido eliminado
-    """
+    """ Test 11: Verifica que el archivo ha sido eliminado """
     cache_instance.set('test.txt', 'Test content')
     cache_instance.delete('test.txt')
     assert not cache_instance.exists('test.txt')
