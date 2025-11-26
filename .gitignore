@@ -56,9 +56,5 @@ ENV/
 .DS_Store
 Thumbs.db
 
-# Proyecto específico
-notebooks/
-*.png
-*.html
-*.ipynb_checkpoints
+
 
